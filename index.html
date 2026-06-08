@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tyre Wear Calculator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f1117;
+      color: #e8eaf0;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+    }
+
+    header p {
+      margin-top: 6px;
+      font-size: 0.85rem;
+      color: #7b8091;
+    }
+
+    .car-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 16px;
+      max-width: 560px;
+      margin: 0 auto 28px;
+    }
+
+    .tyre-card {
+      background: #1c1f2b;
+      border: 1px solid #2a2e3d;
+      border-radius: 14px;
+      padding: 20px 18px 18px;
+      transition: border-color 0.25s;
+    }
+
+    .tyre-card.status-green  { border-color: #22c55e; }
+    .tyre-card.status-amber  { border-color: #f59e0b; }
+    .tyre-card.status-red    { border-color: #ef4444; }
+
+    .tyre-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #7b8091;
+      margin-bottom: 10px;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .mm-input {
+      width: 80px;
+      background: #12141e;
+      border: 1px solid #2a2e3d;
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 1.4rem;
+      font-weight: 600;
+      padding: 8px 10px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+      -moz-appearance: textfield;
+    }
+
+    .mm-input::-webkit-inner-spin-button,
+    .mm-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    .mm-input:focus { border-color: #4f6ef7; }
+
+    .mm-unit {
+      font-size: 0.85rem;
+      color: #7b8091;
+    }
+
+    /* Bar gauge */
+    .gauge-track {
+      height: 10px;
+      background: #12141e;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .gauge-fill {
+      height: 100%;
+      border-radius: 10px;
+      width: 0%;
+      transition: width 0.4s ease, background 0.4s ease;
+    }
+
+    .gauge-fill.green { background: linear-gradient(90deg, #16a34a, #22c55e); }
+    .gauge-fill.amber { background: linear-gradient(90deg, #d97706, #f59e0b); }
+    .gauge-fill.red   { background: linear-gradient(90deg, #b91c1c, #ef4444); }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .percent-label {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .status-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .badge-green { background: #14532d; color: #4ade80; }
+    .badge-amber { background: #451a03; color: #fbbf24; }
+    .badge-red   { background: #450a0a; color: #f87171; }
+    .badge-empty { background: #1e2130; color: #7b8091; }
+
+    /* Summary bar */
+    .summary {
+      max-width: 560px;
+      margin: 0 auto 28px;
+      background: #1c1f2b;
+      border: 1px solid #2a2e3d;
+      border-radius: 14px;
+      padding: 18px 20px;
+    }
+
+    .summary h2 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #7b8091;
+      margin-bottom: 14px;
+    }
+
+    .summary-stats {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #12141e;
+      border-radius: 8px;
+      padding: 8px 14px;
+      flex: 1;
+      min-width: 100px;
+    }
+
+    .stat-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .dot-green { background: #22c55e; }
+    .dot-amber { background: #f59e0b; }
+    .dot-red   { background: #ef4444; }
+
+    .stat-text { font-size: 0.82rem; }
+    .stat-count { font-weight: 700; font-size: 1rem; color: #fff; }
+
+    /* Legend */
+    .legend {
+      max-width: 560px;
+      margin: 0 auto;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: #9ca3af;
+    }
+
+    .legend-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    .swatch-green { background: #22c55e; }
+    .swatch-amber { background: #f59e0b; }
+    .swatch-red   { background: #ef4444; }
+
+    /* Reset button */
+    .reset-btn {
+      display: block;
+      margin: 24px auto 0;
+      background: #1c1f2b;
+      border: 1px solid #2a2e3d;
+      color: #9ca3af;
+      border-radius: 8px;
+      padding: 9px 28px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .reset-btn:hover { background: #2a2e3d; color: #e8eaf0; }
+
+    @media (max-width: 400px) {
+      .car-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Tyre Wear Calculator</h1>
+    <p>Enter tread depth in mm for each tyre</p>
+  </header>
+
+  <div class="car-grid" id="carGrid">
+    <!-- FL -->
+    <div class="tyre-card" id="card-fl">
+      <div class="tyre-label">Front Left</div>
+      <div class="input-row">
+        <input class="mm-input" type="number" id="fl" min="0" max="12" step="0.1" placeholder="–" oninput="update('fl')" />
+        <span class="mm-unit">mm</span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gauge-fl"></div></div>
+      <div class="status-row">
+        <span class="percent-label" id="pct-fl">–</span>
+        <span class="status-badge badge-empty" id="badge-fl">Enter mm</span>
+      </div>
+    </div>
+
+    <!-- FR -->
+    <div class="tyre-card" id="card-fr">
+      <div class="tyre-label">Front Right</div>
+      <div class="input-row">
+        <input class="mm-input" type="number" id="fr" min="0" max="12" step="0.1" placeholder="–" oninput="update('fr')" />
+        <span class="mm-unit">mm</span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gauge-fr"></div></div>
+      <div class="status-row">
+        <span class="percent-label" id="pct-fr">–</span>
+        <span class="status-badge badge-empty" id="badge-fr">Enter mm</span>
+      </div>
+    </div>
+
+    <!-- RL -->
+    <div class="tyre-card" id="card-rl">
+      <div class="tyre-label">Rear Left</div>
+      <div class="input-row">
+        <input class="mm-input" type="number" id="rl" min="0" max="12" step="0.1" placeholder="–" oninput="update('rl')" />
+        <span class="mm-unit">mm</span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gauge-rl"></div></div>
+      <div class="status-row">
+        <span class="percent-label" id="pct-rl">–</span>
+        <span class="status-badge badge-empty" id="badge-rl">Enter mm</span>
+      </div>
+    </div>
+
+    <!-- RR -->
+    <div class="tyre-card" id="card-rr">
+      <div class="tyre-label">Rear Right</div>
+      <div class="input-row">
+        <input class="mm-input" type="number" id="rr" min="0" max="12" step="0.1" placeholder="–" oninput="update('rr')" />
+        <span class="mm-unit">mm</span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gauge-rr"></div></div>
+      <div class="status-row">
+        <span class="percent-label" id="pct-rr">–</span>
+        <span class="status-badge badge-empty" id="badge-rr">Enter mm</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary">
+    <h2>Vehicle Summary</h2>
+    <div class="summary-stats">
+      <div class="stat-pill">
+        <div class="stat-dot dot-green"></div>
+        <div class="stat-text"><span class="stat-count" id="sum-green">–</span> Good</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-dot dot-amber"></div>
+        <div class="stat-text"><span class="stat-count" id="sum-amber">–</span> Advisory</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-dot dot-red"></div>
+        <div class="stat-text"><span class="stat-count" id="sum-red">–</span> Replace</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch swatch-green"></div>Good — above 3mm</div>
+    <div class="legend-item"><div class="legend-swatch swatch-amber"></div>Advisory — at 3mm (serviceable limit)</div>
+    <div class="legend-item"><div class="legend-swatch swatch-red"></div>Replace — 2mm or below</div>
+  </div>
+
+  <button class="reset-btn" onclick="resetAll()">Reset All</button>
+
+  <script>
+    const NEW_MM   = 8.0;   // new tyre depth
+    const WORN_MM  = 1.6;   // legal minimum
+    const AMBER_MM = 3.0;   // safety advisory threshold
+    const RED_MM   = 2.0;   // replace immediately threshold
+    const RANGE    = NEW_MM - WORN_MM; // 6.4mm usable range
+
+    const positions = ['fl', 'fr', 'rl', 'rr'];
+
+    function getStatus(mm) {
+      if (mm <= RED_MM)   return 'red';
+      if (mm <= AMBER_MM) return 'amber';
+      return 'green';
+    }
+
+    function getPct(mm) {
+      const clamped = Math.max(WORN_MM, Math.min(NEW_MM, mm));
+      return Math.round(((clamped - WORN_MM) / RANGE) * 100);
+    }
+
+    function update(pos) {
+      const input = document.getElementById(pos);
+      const val   = parseFloat(input.value);
+
+      const card  = document.getElementById('card-' + pos);
+      const gauge = document.getElementById('gauge-' + pos);
+      const pct   = document.getElementById('pct-' + pos);
+      const badge = document.getElementById('badge-' + pos);
+
+      // Clear previous status classes
+      card.classList.remove('status-green', 'status-amber', 'status-red');
+      gauge.classList.remove('green', 'amber', 'red');
+      badge.classList.remove('badge-green', 'badge-amber', 'badge-red', 'badge-empty');
+
+      if (isNaN(val) || input.value === '') {
+        gauge.style.width = '0%';
+        pct.textContent   = '–';
+        badge.textContent = 'Enter mm';
+        badge.classList.add('badge-empty');
+        updateSummary();
+        return;
+      }
+
+      const status  = getStatus(val);
+      const percent = getPct(val);
+      const width   = Math.max(2, percent); // keep a sliver visible at low values
+
+      gauge.style.width = width + '%';
+      pct.textContent   = percent + '%';
+
+      gauge.classList.add(status);
+      card.classList.add('status-' + status);
+      badge.classList.add('badge-' + status);
+
+      if (status === 'green') badge.textContent = 'Good';
+      if (status === 'amber') badge.textContent = 'Advisory';
+      if (status === 'red')   badge.textContent = 'Replace';
+
+      updateSummary();
+    }
+
+    function updateSummary() {
+      let counts = { green: 0, amber: 0, red: 0, empty: 0 };
+
+      positions.forEach(pos => {
+        const val = parseFloat(document.getElementById(pos).value);
+        if (isNaN(val)) { counts.empty++; return; }
+        counts[getStatus(val)]++;
+      });
+
+      const entered = 4 - counts.empty;
+      document.getElementById('sum-green').textContent = entered > 0 ? counts.green : '–';
+      document.getElementById('sum-amber').textContent = entered > 0 ? counts.amber : '–';
+      document.getElementById('sum-red').textContent   = entered > 0 ? counts.red   : '–';
+    }
+
+    function resetAll() {
+      positions.forEach(pos => {
+        const input = document.getElementById(pos);
+        input.value = '';
+        update(pos);
+      });
+    }
+  </script>
+
+</body>
+</html>
